@@ -1,0 +1,44 @@
+****************************
+*** CO housing => e'ship ***
+****************************
+
+*Author: Nicholas Kacher
+
+clear all
+set more off
+*set local directory
+
+*HMDA data
+*Source: https://ffiec.cfpb.gov/data-browser/data/2018?category=nationwide
+*Options: 2018, natiowide => dowload
+*Options: 2019, natiowide => dowload
+*Options: 2020, natiowide => dowload
+*Options: 2021, natiowide => dowload
+*All .dta files publicly available
+
+*Data dictionary: https://ffiec.cfpb.gov/documentation/2018/lar-data-fields/
+
+
+use year_2018
+append using year_2019, force
+append using year_2020, force
+append using year_2021, force
+keep if state=="CO"
+
+destring property_value, replace force
+save HMDA_CO
+
+*Colorado Census Tract shapefile
+*https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2021&layergroup=Census+Tracts
+
+shp2dta using tl_2021_08_tract, database(CO_tract) coordinates(coord) genid(id)
+rename GEOID census_tract
+save CO_tract, replace
+
+*Example map using HMDA data
+use HMDA_CO
+collapse (mean) property_value, by(census_tract)
+merge 1:1 census_tract using CO_tract, gen(_merge_tract)
+spmap property_value using coord, id(id) fcolor(Blues)
+
+
