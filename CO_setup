@@ -40,5 +40,30 @@ use HMDA_CO
 collapse (mean) property_value, by(census_tract)
 merge 1:1 census_tract using CO_tract, gen(_merge_tract)
 spmap property_value using coord, id(id) fcolor(Blues)
+clear
+
+
+
+use HMDA_CO
+keep if action_taken ==1 & occupancy_type==1 & business_or_commercial_purpose==2
+merge m:1 county using rucc, gen(_merge_rucc)
+collapse (mean) property_value derived_ltv monthly_payment_share (median) rucc, by(census_tract activity_year)
+rename activity_year year
+destring census_tract, replace force
+drop if missing(census_tract)
+xtset census_tract year
+
+gen pv_change_raw = 100*(d.property_value)/property_value
+bys census_tract: egen pv_change = mean(pv_change_raw)
+la var pv_change "Average Annual Percent Change in Property Value"
+
+gen dti_change_raw = 100*(d.monthly_payment_share)/monthly_payment_share
+bys census_tract: egen dti_change = mean(dti_change_raw)
+la var dti_change "Average Annual Percent Change in Debt-to-Income Ratio"
+
+gen ltv_change_raw = 100*(d.derived_ltv)/derived_ltv
+bys census_tract: egen ltv_change = mean(ltv_change_raw)
+la var ltv_change "Average Annual Percent Change in Loan-to-Value Ratio"
+
 
 
